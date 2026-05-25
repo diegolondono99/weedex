@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Weedex 🌿 - Tu Pokédex de Cepas</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<style>
+  :root {
+    --green: #1D9E75;
+    --green-light: #E1F5EE;
+    --green-mid: #9FE1CB;
+    --green-dark: #0F6E56;
+    --bg: #ffffff;
+    --bg2: #f4f4f2;
+    --bg3: #ebebea;
+    --text: #1a1a1a;
+    --text2: #6b6b68;
+    --text3: #a0a09d;
+    --border: rgba(0,0,0,0.12);
+    --border2: rgba(0,0,0,0.22);
+    --radius: 8px;
+    --radius-lg: 12px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1a1a1a; --bg2: #242422; --bg3: #2e2e2c;
+      --text: #f0f0ee; --text2: #a0a09d; --text3: #686865;
+      --border: rgba(255,255,255,0.12); --border2: rgba(255,255,255,0.22);
+    }
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg3); color: var(--text); min-height: 100vh; }
+  .app { max-width: 720px; margin: 0 auto; padding: 0 1rem 4rem; }
+  .header { padding: 1.5rem 0 1rem; text-align: center; border-bottom: 0.5px solid var(--border); margin-bottom: 1.5rem; }
+  .header h1 { font-size: 26px; font-weight: 600; color: var(--text); display: flex; align-items: center; justify-content: center; gap: 10px; }
+  .header h1 i { color: var(--green); font-size: 26px; }
+  .header p { font-size: 13px; color: var(--text2); margin-top: 4px; }
+  .stats-bar { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin-bottom: 1rem; }
+  .stat-card { background: var(--bg2); border-radius: var(--radius); padding: 12px; text-align: center; }
+  .stat-num { font-size: 22px; font-weight: 600; color: var(--text); }
+  .stat-num.green { color: var(--green); }
+  .stat-label { font-size: 11px; color: var(--text2); margin-top: 2px; }
+  .progress-bar { height: 6px; background: var(--bg2); border-radius: 4px; overflow: hidden; margin-bottom: 4px; }
+  .progress-fill { height: 100%; background: var(--green); border-radius: 4px; transition: width .4s; }
+  .progress-label { font-size: 11px; color: var(--text3); text-align: right; margin-bottom: 1.25rem; }
+  .controls { display: flex; gap: 8px; margin-bottom: 1.25rem; flex-wrap: wrap; }
+  .controls input, .controls select {
+    border: 0.5px solid var(--border2); border-radius: var(--radius); padding: 8px 12px;
+    font-size: 14px; background: var(--bg); color: var(--text); outline: none;
+  }
+  .controls input { flex: 1; min-width: 140px; }
+  .controls input:focus, .controls select:focus { border-color: var(--green); }
+  .tab-row { display: flex; gap: 4px; margin-bottom: 1.25rem; flex-wrap: wrap; }
+  .tab { background: transparent; border: 0.5px solid var(--border2); border-radius: var(--radius); padding: 6px 16px; font-size: 13px; cursor: pointer; color: var(--text2); transition: all .15s; }
+  .tab.active { background: var(--bg2); color: var(--text); font-weight: 500; border-color: var(--border2); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+  .card { background: var(--bg); border: 0.5px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; cursor: pointer; transition: border-color .15s, transform .1s; }
+  .card:hover { border-color: var(--border2); transform: translateY(-1px); }
+  .card.tried { border-color: var(--green); border-width: 1.5px; }
+  .card-img { width: 100%; height: 100px; object-fit: cover; display: block; }
+  .card-placeholder { width: 100%; height: 100px; background: var(--bg2); display: flex; align-items: center; justify-content: center; font-size: 32px; }
+  .card-body { padding: 8px 10px; }
+  .card-num { font-size: 10px; color: var(--text3); margin-bottom: 3px; }
+  .card-name { font-size: 12px; font-weight: 500; color: var(--text); margin-bottom: 4px; line-height: 1.3; }
+  .badge { display: inline-block; font-size: 10px; padding: 2px 7px; border-radius: 20px; font-weight: 500; }
+  .badge-indica { background: #CECBF6; color: #3C3489; }
+  .badge-sativa { background: #C0DD97; color: #3B6D11; }
+  .badge-hibrida { background: #FAC775; color: #633806; }
+  .card-check { display: flex; align-items: center; gap: 4px; margin-top: 5px; font-size: 10px; color: var(--text2); }
+  .dot-green { width: 13px; height: 13px; border-radius: 50%; background: var(--green); display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .dot-green i { font-size: 8px; color: #fff; }
+  /* Modal */
+  .overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: none; align-items: flex-start; justify-content: center; padding: 2rem 1rem; z-index: 100; overflow-y: auto; }
+  .overlay.open { display: flex; }
+  .modal { background: var(--bg); border-radius: var(--radius-lg); border: 0.5px solid var(--border); width: 100%; max-width: 460px; overflow: hidden; margin: auto; }
+  .modal-header { padding: 1rem 1.25rem; border-bottom: 0.5px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+  .modal-header h2 { font-size: 16px; font-weight: 500; }
+  .modal-close { background: transparent; border: none; cursor: pointer; color: var(--text2); font-size: 20px; line-height: 1; padding: 2px; }
+  .modal-body { padding: 1.25rem; }
+  .modal-img { width: 100%; height: 180px; object-fit: cover; border-radius: var(--radius); margin-bottom: 1rem; display: block; }
+  .modal-placeholder { width: 100%; height: 180px; background: var(--bg2); border-radius: var(--radius); display: flex; align-items: center; justify-content: center; font-size: 60px; margin-bottom: 1rem; }
+  .modal-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 1rem; }
+  .tag-thc { font-size: 11px; padding: 2px 9px; border-radius: 20px; background: var(--bg2); color: var(--text2); border: 0.5px solid var(--border); }
+  .tag-tried { font-size: 11px; padding: 2px 9px; border-radius: 20px; background: var(--green-light); color: var(--green-dark); border: 0.5px solid var(--green-mid); }
+  .modal-desc { font-size: 13px; color: var(--text2); line-height: 1.6; margin-bottom: 1rem; }
+  .section-label { font-size: 12px; font-weight: 500; color: var(--text2); margin-bottom: 6px; }
+  .effects { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 1rem; }
+  .effect { font-size: 11px; padding: 2px 9px; border-radius: 20px; background: var(--bg2); color: var(--text2); border: 0.5px solid var(--border); }
+  .upload-btn { display: flex; align-items: center; gap: 6px; padding: 8px 14px; border: 0.5px dashed var(--border2); border-radius: var(--radius); cursor: pointer; font-size: 13px; color: var(--text2); background: transparent; width: 100%; justify-content: center; margin-bottom: 1rem; transition: all .15s; }
+  .upload-btn:hover { border-color: var(--green); color: var(--green); }
+  .rating-row { display: flex; gap: 6px; align-items: center; margin-bottom: 1rem; }
+  .rating-row label { font-size: 12px; color: var(--text2); }
+  .star { font-size: 20px; cursor: pointer; opacity: 0.2; transition: opacity .1s; }
+  .star.on { opacity: 1; }
+  .notes-label { font-size: 12px; color: var(--text2); display: block; margin-bottom: 5px; }
+  textarea { width: 100%; font-size: 13px; padding: 8px 10px; border: 0.5px solid var(--border2); border-radius: var(--radius); resize: vertical; min-height: 70px; background: var(--bg); color: var(--text); font-family: inherit; outline: none; margin-bottom: 1rem; }
+  textarea:focus { border-color: var(--green); }
+  .modal-actions { display: flex; gap: 8px; }
+  .btn-primary { flex: 1; padding: 10px; border-radius: var(--radius); border: 1.5px solid var(--green); background: transparent; color: var(--green); font-size: 13px; font-weight: 500; cursor: pointer; transition: all .15s; display: flex; align-items: center; justify-content: center; gap: 5px; }
+  .btn-primary:hover { background: var(--green); color: #fff; }
+  .btn-primary.untry { border-color: var(--border2); color: var(--text2); }
+  .btn-primary.untry:hover { background: var(--bg2); color: var(--text); }
+  .btn-sec { padding: 10px 18px; border-radius: var(--radius); border: 0.5px solid var(--border2); background: transparent; color: var(--text2); font-size: 13px; cursor: pointer; }
+  .btn-sec:hover { background: var(--bg2); }
+  .empty { text-align: center; padding: 3rem 1rem; color: var(--text2); font-size: 14px; }
+  @media(max-width:480px){
+    .grid{grid-template-columns:repeat(2,1fr);}
+    .header h1{font-size:22px;}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <h1><i class="ti ti-leaf"></i> Weedex</h1>
+    <p>Tu pokédex personal de cepas de cannabis</p>
+  </div>
+  <div class="stats-bar" id="statsBar"></div>
+  <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+  <p class="progress-label" id="progressLabel"></p>
+  <div class="controls">
+    <input type="text" id="searchInput" placeholder="Buscar cepa, efecto..." />
+    <select id="typeFilter">
+      <option value="">Todos los tipos</option>
+      <option value="Índica">Índica</option>
+      <option value="Sativa">Sativa</option>
+      <option value="Híbrida">Híbrida</option>
+    </select>
+  </div>
+  <div class="tab-row">
+    <button class="tab active" onclick="setTab(this,'all')">Todas</button>
+    <button class="tab" onclick="setTab(this,'tried')">Probadas</button>
+    <button class="tab" onclick="setTab(this,'untried')">Por probar</button>
+  </div>
+  <div class="grid" id="grid"></div>
+  <div class="empty" id="empty" style="display:none">No se encontraron cepas.</div>
+</div>
+
+<div class="overlay" id="overlay" onclick="closeOverlay(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="modalTitle"></h2>
+      <button class="modal-close" onclick="closeModal()"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+<input type="file" id="photoInput" accept="image/*" style="display:none" onchange="handlePhoto(event)">
+
+<script>
+const STRAINS=[
+{id:1,name:"OG Kush",type:"Híbrida",thc:"20-25%",emoji:"🌿",desc:"Una de las más famosas del mundo. Origen en California, aroma terroso con notas de pino y limón.",effects:["Relajante","Eufórico","Creativo","Apetito"]},
+{id:2,name:"Blue Dream",type:"Híbrida",thc:"17-24%",emoji:"💙",desc:"Híbrida dominante sativa con sabor a arándano. Equilibrio entre relajación y energía.",effects:["Energizante","Feliz","Creativo","Relajante"]},
+{id:3,name:"Girl Scout Cookies",type:"Híbrida",thc:"25-28%",emoji:"🍪",desc:"Cepa potente con aroma dulce y terroso. Ganadora de múltiples Cannabis Cup.",effects:["Eufórico","Relajante","Hambre","Feliz"]},
+{id:4,name:"Sour Diesel",type:"Sativa",thc:"18-26%",emoji:"⚡",desc:"Sativa de acción rápida con aroma fuerte a diésel. Efecto energizante y cerebral.",effects:["Energizante","Eufórico","Creativo","Social"]},
+{id:5,name:"Northern Lights",type:"Índica",thc:"16-21%",emoji:"🌌",desc:"Clásica índica de los años 80. Relajación profunda del cuerpo, ideal para el final del día.",effects:["Somnoliento","Relajante","Sedante","Dolor"]},
+{id:6,name:"White Widow",type:"Híbrida",thc:"18-25%",emoji:"❄️",desc:"Legendaria cepa holandesa cubierta de cristales. Equilibrada con euforia mental y relajación.",effects:["Eufórico","Energizante","Alerta","Creativo"]},
+{id:7,name:"Amnesia Haze",type:"Sativa",thc:"20-22%",emoji:"🌀",desc:"Sativa de efecto largo y cerebral. Muy popular en los coffee shops de Ámsterdam.",effects:["Eufórico","Creativo","Energizante","Feliz"]},
+{id:8,name:"Purple Haze",type:"Sativa",thc:"16-20%",emoji:"💜",desc:"Inmortalizada por Jimi Hendrix. Tono morado, sabor afrutado y efecto psicodélico suave.",effects:["Eufórico","Creativo","Feliz","Energizante"]},
+{id:9,name:"Gorilla Glue #4",type:"Híbrida",thc:"25-30%",emoji:"🦍",desc:"Muy pegajosa y potente. Ganadora de múltiples premios, efecto pesado y relajante.",effects:["Relajante","Eufórico","Sedante","Hambre"]},
+{id:10,name:"Jack Herer",type:"Sativa",thc:"18-23%",emoji:"🌞",desc:"Nombrada en honor al activista cannábico. Sabor a pino y madera, efecto claro y motivador.",effects:["Creativo","Energizante","Feliz","Concentrado"]},
+{id:11,name:"Blueberry",type:"Índica",thc:"15-20%",emoji:"🫐",desc:"Clásica índica con aroma y sabor intenso a arándano. Premio Cannabis Cup mejor índica.",effects:["Relajante","Somnoliento","Feliz","Dolor"]},
+{id:12,name:"Chemdawg",type:"Híbrida",thc:"15-20%",emoji:"🧪",desc:"Genética misteriosa que dio origen a OG Kush y Sour Diesel. Aroma a gasolina muy pronunciado.",effects:["Creativo","Eufórico","Alerta","Relajante"]},
+{id:13,name:"Zkittlez",type:"Índica",thc:"15-23%",emoji:"🌈",desc:"Sabor a frutas tropicales multicolor. Ganadora del Emerald Cup 2016.",effects:["Relajante","Feliz","Eufórico","Hambre"]},
+{id:14,name:"Gelato",type:"Híbrida",thc:"20-25%",emoji:"🍦",desc:"Creada en San Francisco por Cookie Fam. Sabor cremoso a helado con efectos equilibrados.",effects:["Relajante","Eufórico","Creativo","Feliz"]},
+{id:15,name:"Wedding Cake",type:"Índica",thc:"25-27%",emoji:"🎂",desc:"Alta en THC con sabor dulce y picante. Relaja el cuerpo manteniendo la mente activa.",effects:["Relajante","Eufórico","Hambre","Feliz"]},
+{id:16,name:"Runtz",type:"Híbrida",thc:"19-29%",emoji:"🍬",desc:"Sabor a caramelo frutal, colores vibrantes. Una de las más cotizadas de los últimos años.",effects:["Eufórico","Relajante","Feliz","Creativo"]},
+{id:17,name:"Strawberry Cough",type:"Sativa",thc:"15-18%",emoji:"🍓",desc:"Sabor a fresa fresca. Efecto social y energizante, ideal para actividades diurnas.",effects:["Energizante","Social","Feliz","Creativo"]},
+{id:18,name:"Afghan Kush",type:"Índica",thc:"17-20%",emoji:"🏔️",desc:"Originaria de las montañas Hindu Kush. Pura índica con resina abundante y efecto muy sedante.",effects:["Sedante","Relajante","Somnoliento","Dolor"]},
+{id:19,name:"Super Lemon Haze",type:"Sativa",thc:"16-22%",emoji:"🍋",desc:"Ganadora del Cannabis Cup 2008 y 2009. Aroma cítrico intenso y efecto cerebral energizante.",effects:["Energizante","Eufórico","Creativo","Social"]},
+{id:20,name:"Bruce Banner",type:"Híbrida",thc:"28-30%",emoji:"💚",desc:"Una de las más potentes del mundo. Euforia intensa nombrada por el alter ego del Hulk.",effects:["Eufórico","Creativo","Energizante","Relajante"]},
+{id:21,name:"Trainwreck",type:"Híbrida",thc:"18-25%",emoji:"🚂",desc:"Sativa dominante con aroma a limón y pimienta. Efecto rápido, intenso y eufórico.",effects:["Eufórico","Energizante","Creativo","Feliz"]},
+{id:22,name:"Granddaddy Purple",type:"Índica",thc:"17-23%",emoji:"👴",desc:"Famosa por sus flores moradas y sabor a uva. Relajación profunda del cuerpo.",effects:["Relajante","Somnoliento","Feliz","Dolor"]},
+{id:23,name:"Green Crack",type:"Sativa",thc:"15-25%",emoji:"🔋",desc:"Nombre popular por su alto efecto energizante. Sabor a mango y cítricos. Muy motivadora.",effects:["Energizante","Concentrado","Feliz","Creativo"]},
+{id:24,name:"Durban Poison",type:"Sativa",thc:"15-25%",emoji:"🌍",desc:"Originaria de Sudáfrica, pura sativa. Sabor anisado y efecto claro, estimulante y productivo.",effects:["Energizante","Creativo","Feliz","Concentrado"]},
+{id:25,name:"Ice Cream Cake",type:"Índica",thc:"20-25%",emoji:"🍨",desc:"Sabor cremoso a vainilla y pastel de queso. Relajación total, ideal para antes de dormir.",effects:["Sedante","Relajante","Somnoliento","Feliz"]},
+{id:26,name:"Pineapple Express",type:"Híbrida",thc:"19-25%",emoji:"🍍",desc:"Popularizada por la película homónima. Sabor tropical con notas de mango y piña.",effects:["Energizante","Creativo","Eufórico","Feliz"]},
+{id:27,name:"Bubba Kush",type:"Índica",thc:"15-22%",emoji:"💤",desc:"Índica tranquilizante con aroma a café y chocolate. Muy usada para insomnio y estrés.",effects:["Sedante","Relajante","Somnoliento","Dolor"]},
+{id:28,name:"Purple Punch",type:"Índica",thc:"20-25%",emoji:"🥊",desc:"Cruza de Larry OG y Granddaddy Purple. Sabor a uva y kool-aid. Sedación potente.",effects:["Sedante","Relajante","Somnoliento","Eufórico"]},
+{id:29,name:"Do-Si-Dos",type:"Índica",thc:"21-30%",emoji:"🩰",desc:"Potente índica con aroma floral y terroso. Relajación intensa mente-cuerpo.",effects:["Relajante","Eufórico","Sedante","Hambre"]},
+{id:30,name:"Mimosa",type:"Sativa",thc:"19-27%",emoji:"🥂",desc:"Cruce de Clementine y Purple Punch. Sabor cítrico como el cóctel. Alegre y social.",effects:["Eufórico","Energizante","Feliz","Social"]},
+{id:31,name:"Cereal Milk",type:"Híbrida",thc:"18-23%",emoji:"🥣",desc:"Sabor cremoso a leche con cereal azucarado. Crea un estado de alerta relajada y creativa.",effects:["Creativo","Relajante","Eufórico","Feliz"]},
+{id:32,name:"Jealousy",type:"Híbrida",thc:"21-25%",emoji:"😤",desc:"Cepa de Seed Junky Genetics con aroma a tierra y crema. Efectos equilibrados y potentes.",effects:["Relajante","Eufórico","Feliz","Creativo"]},
+{id:33,name:"Gary Payton",type:"Híbrida",thc:"20-25%",emoji:"🏀",desc:"Colaboración de Cookies y Powerzzzup. Gas, tierra y cítrico. Efecto eufórico e intenso.",effects:["Eufórico","Energizante","Creativo","Relajante"]},
+{id:34,name:"Sunset Sherbet",type:"Híbrida",thc:"15-19%",emoji:"🌅",desc:"Descendiente de GSC con aroma a frutas y skunky. Relajación del cuerpo con alerta mental.",effects:["Relajante","Eufórico","Creativo","Hambre"]},
+{id:35,name:"MAC 1",type:"Híbrida",thc:"20-23%",emoji:"🌸",desc:"Miracle Alien Cookies. Flores densas cubiertas de tricomas, sabor floral y cítrico equilibrado.",effects:["Eufórico","Relajante","Creativo","Feliz"]},
+{id:36,name:"Lemon Cherry Gelato",type:"Híbrida",thc:"20-25%",emoji:"🍋",desc:"Combinación perfecta de cítrico y dulce. Muy popular en California. Efectos intensos y duraderos.",effects:["Eufórico","Relajante","Feliz","Creativo"]},
+{id:37,name:"Pink Runtz",type:"Híbrida",thc:"23-25%",emoji:"🌸",desc:"Versión rosada del Runtz original. Sabor a caramelo tropical con efectos elevados y relajantes.",effects:["Eufórico","Relajante","Feliz","Sedante"]},
+{id:38,name:"Tropicana Cookies",type:"Sativa",thc:"22-26%",emoji:"🍊",desc:"Cruce de GSC y Tangie. Aroma intenso a naranja tropical. Efecto cerebral y estimulante.",effects:["Eufórico","Energizante","Creativo","Feliz"]},
+{id:39,name:"Obama Runtz",type:"Híbrida",thc:"21-25%",emoji:"🎩",desc:"Genética de Afgoo y OG Kush. Aroma picante y terroso con toque floral. Muy potente.",effects:["Relajante","Eufórico","Sedante","Feliz"]},
+{id:40,name:"London Pound Cake",type:"Índica",thc:"25-29%",emoji:"🎂",desc:"Descendiente de Sunset Sherbet. Sabor a vainilla y frutas del bosque. Sedación total.",effects:["Sedante","Relajante","Somnoliento","Hambre"]},
+{id:41,name:"Papaya",type:"Índica",thc:"20-25%",emoji:"🫐",desc:"Cepa de Nirvana Seeds con sabor tropical a papaya. Relajación física intensa.",effects:["Relajante","Sedante","Feliz","Apetito"]},
+{id:42,name:"Watermelon Zkittlez",type:"Índica",thc:"18-23%",emoji:"🍉",desc:"Sabor a sandía dulce con el perfil frutal de Zkittlez. Relajante y muy sabrosa.",effects:["Relajante","Feliz","Hambre","Somnoliento"]},
+{id:43,name:"Biscotti",type:"Índica",thc:"21-25%",emoji:"🍩",desc:"De la familia Cookies. Aroma a galleta recién horneada con notas diésel. Potente y sedante.",effects:["Sedante","Relajante","Eufórico","Hambre"]},
+{id:44,name:"Alien OG",type:"Híbrida",thc:"20-28%",emoji:"👽",desc:"Cruce de Alien Kush y Tahoe OG. Efecto muy cerebral y físico simultáneamente. Para expertos.",effects:["Eufórico","Relajante","Creativo","Sedante"]},
+{id:45,name:"Cherry Pie",type:"Híbrida",thc:"16-24%",emoji:"🍒",desc:"Descendiente de Granddaddy Purple y Durban Poison. Sabor a cereza dulce con notas terrosas.",effects:["Relajante","Eufórico","Feliz","Creativo"]},
+{id:46,name:"Mandarin Cookies",type:"Híbrida",thc:"18-22%",emoji:"🍊",desc:"Cruce de Mandarin Sunset y Forum Cookies. Aroma cítrico intenso. Efecto equilibrado y creativo.",effects:["Creativo","Energizante","Eufórico","Relajante"]},
+{id:47,name:"Dosidos",type:"Índica",thc:"19-28%",emoji:"🫙",desc:"Face Off OG x GSC. Aroma a menta y limón. Relajación potente con leve euforia.",effects:["Relajante","Eufórico","Sedante","Dolor"]},
+{id:48,name:"Triangle Kush",type:"Índica",thc:"20-26%",emoji:"📐",desc:"Kush de la Florida, parte del linaje de OG Kush. Sabor cítrico y terroso. Sedación densa.",effects:["Sedante","Relajante","Somnoliento","Dolor"]},
+{id:49,name:"Headband",type:"Híbrida",thc:"20-27%",emoji:"👑",desc:"OG Kush x Sour Diesel. Produce sensación de presión en la cabeza. Euforia cerebral duradera.",effects:["Eufórico","Creativo","Relajante","Concentrado"]},
+{id:50,name:"Mango Kush",type:"Índica",thc:"16-20%",emoji:"🥭",desc:"Kush con sabor intenso a mango maduro. Relajante cuerpo-mente, ideal para tardes tranquilas.",effects:["Relajante","Feliz","Somnoliento","Apetito"]},
+{id:51,name:"Kush Mints",type:"Híbrida",thc:"22-26%",emoji:"🌿",desc:"Animal Mints x Bubba Kush. Aroma a menta y tierra. Efecto fuerte, relajante con cerebro activo.",effects:["Relajante","Eufórico","Concentrado","Feliz"]},
+{id:52,name:"Animal Cookies",type:"Índica",thc:"22-27%",emoji:"🐾",desc:"GSC x Fire OG. Aroma a tierra y dulce. Relajación total del cuerpo y mente. Para noches.",effects:["Sedante","Relajante","Eufórico","Somnoliento"]},
+{id:53,name:"Sherblato",type:"Híbrida",thc:"20-24%",emoji:"🍧",desc:"Sunset Sherbet x Gelato. Lo mejor de dos mundos: frutal, cremoso, eufórico y relajante.",effects:["Eufórico","Relajante","Feliz","Creativo"]},
+{id:54,name:"Slurricane",type:"Índica",thc:"20-28%",emoji:"🌊",desc:"Do-Si-Dos x Purple Punch. Potente y sedante. Aroma a uva y tierra. Para usuarios con tolerancia.",effects:["Sedante","Relajante","Somnoliento","Eufórico"]},
+{id:55,name:"Grape Ape",type:"Índica",thc:"18-21%",emoji:"🍇",desc:"Mendobreath x Skunk x Afghani. Sabor intenso a uva. Relajación muscular profunda.",effects:["Relajante","Somnoliento","Feliz","Dolor"]},
+{id:56,name:"Platinum OG",type:"Índica",thc:"20-24%",emoji:"💿",desc:"Master Kush x OG Kush x una tercera desconocida. Sedación total. No apta para principiantes.",effects:["Sedante","Somnoliento","Relajante","Dolor"]},
+{id:57,name:"Garlic Breath",type:"Híbrida",thc:"19-25%",emoji:"🧄",desc:"GMO x Mendo Breath. Aroma intenso a ajo y tierra. Efecto muy potente, pesado y relajante.",effects:["Relajante","Sedante","Eufórico","Dolor"]},
+{id:58,name:"GMO Cookies",type:"Índica",thc:"20-30%",emoji:"🧬",desc:"Garlic Mushroom Onion. Chemdawg x GSC. Aroma peculiar y potencia extrema. Para expertos.",effects:["Sedante","Relajante","Eufórico","Somnoliento"]},
+{id:59,name:"Permanent Marker",type:"Híbrida",thc:"23-29%",emoji:"🖊️",desc:"Biscotti x Sherb BX x Jealousy. Aroma frutal y químico. Potente con efectos duraderos.",effects:["Eufórico","Relajante","Creativo","Sedante"]},
+{id:60,name:"Jokerz",type:"Híbrida",thc:"22-27%",emoji:"🃏",desc:"White Runtz x Jet Fuel Gelato. Dulce, cítrico y gaseoso. Cerebral y relajante simultáneamente.",effects:["Eufórico","Creativo","Relajante","Feliz"]},
+{id:61,name:"Fatso",type:"Índica",thc:"20-25%",emoji:"🥔",desc:"GMO x Legend OG. Sabor a mantequilla y gas. Relajación intensa de cuerpo y mente.",effects:["Relajante","Sedante","Somnoliento","Dolor"]},
+{id:62,name:"Super Silver Haze",type:"Sativa",thc:"18-23%",emoji:"🔆",desc:"Ganadora de 3 High Times Cannabis Cup consecutivos. Haze x Skunk x NL. Energizante pura.",effects:["Energizante","Eufórico","Creativo","Social"]},
+{id:63,name:"Columbian Gold",type:"Sativa",thc:"14-19%",emoji:"🇨🇴",desc:"Landrace colombiana clásica. Sabor terroso y herbal. Efecto cerebral suave, ideal para el día.",effects:["Energizante","Creativo","Feliz","Social"]},
+{id:64,name:"Acapulco Gold",type:"Sativa",thc:"15-23%",emoji:"🏆",desc:"Legendaria landrace mexicana. Sabor a caramelo tostado. Considerada referente histórico.",effects:["Eufórico","Energizante","Creativo","Feliz"]},
+{id:65,name:"Thai",type:"Sativa",thc:"14-20%",emoji:"🌺",desc:"Landrace tailandesa ancestral. Efecto cerebral puro y de larga duración. Sativa auténtica.",effects:["Energizante","Creativo","Eufórico","Concentrado"]},
+{id:66,name:"Lamb's Bread",type:"Sativa",thc:"16-21%",emoji:"🐑",desc:"Favorita de Bob Marley. Originaria de Jamaica. Efecto alegre, espiritual y muy cerebral.",effects:["Eufórico","Feliz","Creativo","Energizante"]},
+{id:67,name:"Critical Mass",type:"Índica",thc:"19-22%",emoji:"⚛️",desc:"Afghani x Skunk #1. Alta producción y efecto muy relajante. Popular para uso medicinal.",effects:["Relajante","Somnoliento","Dolor","Sedante"]},
+{id:68,name:"Power Plant",type:"Sativa",thc:"15-20%",emoji:"🏭",desc:"Originaria de Sudáfrica. Efecto cerebral rápido y energizante. Sabor terroso y picante.",effects:["Energizante","Eufórico","Creativo","Concentrado"]},
+{id:69,name:"Hash Plant",type:"Índica",thc:"17-21%",emoji:"🪨",desc:"Afghani pura, usada históricamente para producir hachís. Efecto muy sedante y físico.",effects:["Sedante","Somnoliento","Relajante","Dolor"]},
+{id:70,name:"Black Domina",type:"Índica",thc:"20-23%",emoji:"🖤",desc:"Afghani x Canadian x Hash Plant x NL. Cuatro índicas puras. Sedación inmediata y profunda.",effects:["Sedante","Somnoliento","Relajante","Dolor"]},
+];
+
+let userData={},currentStrain=null,currentTab='all',currentSearch='',currentType='',pendingPhoto=null;
+function load(){try{const s=localStorage.getItem('weedex_v2');if(s)userData=JSON.parse(s);}catch(e){}}
+function save(){try{localStorage.setItem('weedex_v2',JSON.stringify(userData));}catch(e){}}
+load();
+
+function badgeClass(t){return t==='Índica'?'badge-indica':t==='Sativa'?'badge-sativa':'badge-hibrida';}
+
+function renderStats(){
+  const tried=STRAINS.filter(s=>userData[s.id]?.tried).length,total=STRAINS.length,pct=Math.round(tried/total*100);
+  document.getElementById('statsBar').innerHTML=`
+    <div class="stat-card"><div class="stat-num">${total}</div><div class="stat-label">Total cepas</div></div>
+    <div class="stat-card"><div class="stat-num green">${tried}</div><div class="stat-label">Probadas</div></div>
+    <div class="stat-card"><div class="stat-num">${total-tried}</div><div class="stat-label">Por probar</div></div>`;
+  document.getElementById('progressFill').style.width=pct+'%';
+  document.getElementById('progressLabel').textContent=pct+'% del Weedex completado';
+}
+
+function filtered(){
+  return STRAINS.filter(s=>{
+    const tried=!!(userData[s.id]?.tried);
+    if(currentTab==='tried'&&!tried)return false;
+    if(currentTab==='untried'&&tried)return false;
+    if(currentType&&s.type!==currentType)return false;
+    if(currentSearch){const q=currentSearch.toLowerCase();if(!s.name.toLowerCase().includes(q)&&!s.type.toLowerCase().includes(q)&&!s.effects.join(' ').toLowerCase().includes(q)&&!s.desc.toLowerCase().includes(q))return false;}
+    return true;
+  });
+}
+
+function renderGrid(){
+  renderStats();
+  const list=filtered(),grid=document.getElementById('grid'),empty=document.getElementById('empty');
+  if(!list.length){grid.innerHTML='';empty.style.display='block';return;}
+  empty.style.display='none';
+  grid.innerHTML=list.map(s=>{
+    const u=userData[s.id]||{},tried=!!u.tried,stars=u.rating||0;
+    const img=u.photo?`<img src="${u.photo}" class="card-img" alt="${s.name}" loading="lazy">`:`<div class="card-placeholder">${s.emoji}</div>`;
+    return `<div class="card${tried?' tried':''}" onclick="openModal(${s.id})">
+      ${img}
+      <div class="card-body">
+        <div class="card-num">#${String(s.id).padStart(3,'0')}</div>
+        <div class="card-name">${s.name}</div>
+        <span class="badge ${badgeClass(s.type)}">${s.type}</span>
+        ${stars?`<div style="font-size:10px;margin-top:3px">${'⭐'.repeat(stars)}</div>`:''}
+        <div class="card-check">
+          ${tried?`<span class="dot-green"><i class="ti ti-check"></i></span> Probada`:`<i class="ti ti-circle-dashed" style="font-size:11px"></i> Sin probar`}
+        </div>
+      </div></div>`;
+  }).join('');
+}
+
+function openModal(id){
+  currentStrain=STRAINS.find(s=>s.id===id);pendingPhoto=null;
+  document.getElementById('modalTitle').textContent=`#${String(id).padStart(3,'0')} ${currentStrain.name}`;
+  renderModalBody(currentStrain,userData[id]||{});
+  document.getElementById('overlay').classList.add('open');
+}
+
+function renderModalBody(s,u){
+  const tried=!!u.tried,stars=u.rating||0;
+  const img=u.photo?`<img src="${u.photo}" class="modal-img" alt="${s.name}">`:`<div class="modal-placeholder">${s.emoji}</div>`;
+  document.getElementById('modalBody').innerHTML=`
+    ${img}
+    <div class="modal-tags">
+      <span class="badge ${badgeClass(s.type)}">${s.type}</span>
+      <span class="tag-thc">THC: ${s.thc}</span>
+      ${tried?`<span class="tag-tried">✓ Probada</span>`:''}
+    </div>
+    <p class="modal-desc">${s.desc}</p>
+    <p class="section-label">Efectos</p>
+    <div class="effects">${s.effects.map(e=>`<span class="effect">${e}</span>`).join('')}</div>
+    <button class="upload-btn" onclick="document.getElementById('photoInput').click()">
+      <i class="ti ti-camera"></i> ${u.photo?'Cambiar foto':'Agregar tu foto'}
+    </button>
+    <div class="rating-row">
+      <label>Tu valoración:</label>
+      ${[1,2,3,4,5].map(n=>`<span class="star${n<=stars?' on':''}" onclick="setRating(${n})">⭐</span>`).join('')}
+    </div>
+    <label class="notes-label">Notas personales</label>
+    <textarea id="notesInput" placeholder="¿Cómo fue? ¿Dónde la conseguiste?">${u.notes||''}</textarea>
+    <div class="modal-actions">
+      <button class="btn-primary${tried?' untry':''}" onclick="toggleTried(${s.id})">
+        <i class="ti ${tried?'ti-circle-minus':'ti-circle-check'}"></i>
+        ${tried?'Marcar sin probar':'Marcar como probada'}
+      </button>
+      <button class="btn-sec" onclick="saveEntry(${s.id})">Guardar</button>
+    </div>`;
+}
+
+function setRating(n){
+  if(!currentStrain)return;
+  const u=userData[currentStrain.id]||{};u.rating=n;userData[currentStrain.id]=u;
+  document.querySelectorAll('.star').forEach((el,i)=>el.classList.toggle('on',i<n));
+}
+function toggleTried(id){const u=userData[id]||{};u.tried=!u.tried;userData[id]=u;save();renderGrid();openModal(id);}
+function saveEntry(id){
+  const u=userData[id]||{};u.notes=document.getElementById('notesInput').value;
+  if(pendingPhoto)u.photo=pendingPhoto;userData[id]=u;save();renderGrid();
+  renderModalBody(STRAINS.find(s=>s.id===id),u);
+}
+function handlePhoto(e){
+  const f=e.target.files[0];if(!f)return;
+  const r=new FileReader();r.onload=ev=>{pendingPhoto=ev.target.result;if(currentStrain)renderModalBody(currentStrain,{...userData[currentStrain.id]||{},photo:pendingPhoto});};
+  r.readAsDataURL(f);e.target.value='';
+}
+function closeModal(){document.getElementById('overlay').classList.remove('open');currentStrain=null;pendingPhoto=null;}
+function closeOverlay(e){if(e.target===document.getElementById('overlay'))closeModal();}
+function setTab(el,tab){currentTab=tab;document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');renderGrid();}
+document.getElementById('searchInput').addEventListener('input',e=>{currentSearch=e.target.value.trim();renderGrid();});
+document.getElementById('typeFilter').addEventListener('change',e=>{currentType=e.target.value;renderGrid();});
+renderGrid();
+</script>
+</body>
+</html>
